@@ -1,0 +1,41 @@
+server:
+  port: ${PORT:8080}
+  shutdown: graceful
+  tomcat:
+    threads:
+      max: 50            # límite de hilos para peticiones concurrentes
+
+spring:
+  application:
+    name: motor-filas
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      timeout: 2s
+  lifecycle:
+    timeout-per-shutdown-phase: 20s
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      probes:
+        enabled: true
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+
+motor:
+  service-token: ${SERVICE_TOKEN:}
+  # Las filas viven un día de atención; después Redis las borra solo.
+  ttl-fila-segundos: 57600
+  cierre:
+    hilos-base: 4
+    hilos-max: 8
+    capacidad-cola: 100
