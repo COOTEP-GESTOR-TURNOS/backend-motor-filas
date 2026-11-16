@@ -48,7 +48,7 @@ public class FilaRedisRepository {
         List<Object> r = redis.execute(SIGUIENTE,
                 List.of(clave(filaId, "pref"), clave(filaId, "gen"), clave(filaId, "racha")),
                 Integer.toString(k), Long.toString(ttlSegundos));
-        if (r == null || r.isEmpty()) {
+        if (r == null || r.size() < 3 || r.get(0) == null) {
             return Optional.empty();
         }
         return Optional.of(new SiguienteResponse(
@@ -57,7 +57,7 @@ public class FilaRedisRepository {
 
     public Optional<Instantanea> posicion(String filaId, String turnoId) {
         List<Object> r = redis.execute(POSICION, List.of(clave(filaId, "pref"), clave(filaId, "gen")), turnoId);
-        if (r == null || r.isEmpty()) {
+        if (r == null || r.size() < 4 || r.get(0) == null) {
             return Optional.empty();
         }
         return Optional.of(new Instantanea(TipoAtencion.valueOf((String) r.get(0)),

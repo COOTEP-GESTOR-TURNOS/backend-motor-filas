@@ -17,7 +17,7 @@ elseif hayGeneral then
   origen, tipo = KEYS[2], 'GENERAL'
   racha = 0
 else
-  return nil
+  return {} -- fila vacía: lista vacía (un nil llega a Java como [null])
 end
 
 local entregado = redis.call('ZPOPMIN', origen)
