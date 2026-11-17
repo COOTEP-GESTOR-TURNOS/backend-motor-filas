@@ -39,8 +39,13 @@ mvn spring-boot:run      # con las variables de .env.example
 mvn test                 # las pruebas de concurrencia levantan Redis con Testcontainers (requiere Docker)
 ```
 
-Sin Maven instalado, use la imagen oficial:
+Sin Maven instalado, use la imagen oficial. Necesita el socket de Docker para que Testcontainers
+levante Redis; sin él, JUnit omite `FilaConcurrenciaTest` (PR-06 a PR-08) sin fallar, así que el
+resumen debe decir `Skipped: 0`:
 
 ```bash
-docker run --rm -v "$PWD":/app -w /app maven:3.9.9-eclipse-temurin-21 mvn test
+# En Git Bash (Windows); en Linux o macOS use -v "$PWD":/app y quite MSYS_NO_PATHCONV
+MSYS_NO_PATHCONV=1 docker run --rm -v "$(pwd -W)":/app -v cootep-m2:/root/.m2 \
+  -v /var/run/docker.sock:/var/run/docker.sock -e TESTCONTAINERS_HOST_OVERRIDE=host.docker.internal \
+  -w /app maven:3.9.9-eclipse-temurin-21 mvn -B -ntp test
 ```
