@@ -3,6 +3,7 @@ package co.cootep.motorfilas.service;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import co.cootep.motorfilas.model.Modelos.EncolarRequest;
+import co.cootep.motorfilas.model.Modelos.PaginaFilaResponse;
 import co.cootep.motorfilas.model.Modelos.SiguienteResponse;
 import co.cootep.motorfilas.model.Modelos.TipoAtencion;
 import java.util.ArrayList;
@@ -129,6 +130,42 @@ class FilaConcurrenciaTest {
                 p1.turnoId().toString(), p2.turnoId().toString(), g1.turnoId().toString(),
                 p3.turnoId().toString(), g2.turnoId().toString());
         assertThat(servicio.siguiente(fila, 2)).isEmpty();
+    }
+
+    @Test
+    @DisplayName("La página sigue la regla K y la racha actual sin consumir turnos")
+    void paginaLaFilaSegunElOrdenDeEntrega() {
+        String fila = nuevaFila();
+        EncolarRequest g1 = turno(TipoAtencion.GENERAL);
+        EncolarRequest p1 = turno(TipoAtencion.PREFERENCIAL);
+        EncolarRequest p2 = turno(TipoAtencion.PREFERENCIAL);
+        EncolarRequest g2 = turno(TipoAtencion.GENERAL);
+        EncolarRequest p3 = turno(TipoAtencion.PREFERENCIAL);
+        EncolarRequest p4 = turno(TipoAtencion.PREFERENCIAL);
+        EncolarRequest g3 = turno(TipoAtencion.GENERAL);
+        EncolarRequest p5 = turno(TipoAtencion.PREFERENCIAL);
+        List.of(g1, p1, p2, g2, p3, p4, g3, p5).forEach(t -> servicio.encolar(fila, t));
+        assertThat(servicio.siguiente(fila, 2).orElseThrow().turnoId()).isEqualTo(p1.turnoId().toString());
+
+        PaginaFilaResponse primera = servicio.listar(fila, 2, 1, 3);
+        PaginaFilaResponse segunda = servicio.listar(fila, 2, 2, 3);
+        PaginaFilaResponse tercera = servicio.listar(fila, 2, 3, 3);
+        assertThat(primera.elementos()).extracting(SiguienteResponse::turnoId)
+                .containsExactly(p2.turnoId().toString(), g1.turnoId().toString(), p3.turnoId().toString());
+        assertThat(segunda.elementos()).extracting(SiguienteResponse::turnoId)
+                .containsExactly(p4.turnoId().toString(), g2.turnoId().toString(), p5.turnoId().toString());
+        assertThat(tercera.elementos()).extracting(SiguienteResponse::turnoId).containsExactly(g3.turnoId().toString());
+        assertThat(primera.total()).isEqualTo(7);
+        assertThat(primera.totalPaginas()).isEqualTo(3);
+        assertThat(servicio.listar(fila, 2, 4, 3)).isEqualTo(new PaginaFilaResponse(List.of(), 7, 4, 3, 3));
+        assertThat(servicio.listar(nuevaFila(), 2, 1, 3)).isEqualTo(new PaginaFilaResponse(List.of(), 0, 1, 3, 0));
+
+        List<SiguienteResponse> ordenReal = IntStream.range(0, 7)
+                .mapToObj(i -> servicio.siguiente(fila, 2).orElseThrow()).toList();
+        List<SiguienteResponse> ordenConsultado = new ArrayList<>(primera.elementos());
+        ordenConsultado.addAll(segunda.elementos());
+        ordenConsultado.addAll(tercera.elementos());
+        assertThat(ordenConsultado).containsExactlyElementsOf(ordenReal);
     }
 
     @Test
