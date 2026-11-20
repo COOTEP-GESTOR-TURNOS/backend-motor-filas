@@ -3,6 +3,7 @@ package co.cootep.motorfilas.controller;
 import co.cootep.motorfilas.model.Modelos.EncolarRequest;
 import co.cootep.motorfilas.model.Modelos.EncolarResponse;
 import co.cootep.motorfilas.model.Modelos.EstadoFilaResponse;
+import co.cootep.motorfilas.model.Modelos.PaginaFilaResponse;
 import co.cootep.motorfilas.model.Modelos.PosicionResponse;
 import co.cootep.motorfilas.model.Modelos.SiguienteRequest;
 import co.cootep.motorfilas.model.Modelos.SiguienteResponse;
@@ -45,6 +46,15 @@ public class FilaController {
     public EncolarResponse encolar(@PathVariable @Pattern(regexp = PATRON_FILA) String filaId,
                                    @Valid @RequestBody EncolarRequest peticion) {
         return servicio.encolar(filaId, peticion);
+    }
+
+    @GetMapping("/{filaId}/turnos")
+    @Operation(summary = "Consulta una página de turnos en espera según la regla K")
+    public PaginaFilaResponse listar(@PathVariable @Pattern(regexp = PATRON_FILA) String filaId,
+                                    @RequestParam(defaultValue = "2") @Min(1) @Max(10) int k,
+                                    @RequestParam(defaultValue = "1") @Min(1) int pagina,
+                                    @RequestParam(defaultValue = "20") @Min(1) @Max(100) int tamano) {
+        return servicio.listar(filaId, k, pagina, tamano);
     }
 
     @PostMapping("/{filaId}/siguiente")

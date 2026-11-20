@@ -5,6 +5,7 @@ import co.cootep.motorfilas.model.Modelos.CierreResponse;
 import co.cootep.motorfilas.model.Modelos.EncolarRequest;
 import co.cootep.motorfilas.model.Modelos.EncolarResponse;
 import co.cootep.motorfilas.model.Modelos.EstadoFilaResponse;
+import co.cootep.motorfilas.model.Modelos.PaginaFilaResponse;
 import co.cootep.motorfilas.model.Modelos.PosicionResponse;
 import co.cootep.motorfilas.model.Modelos.SiguienteResponse;
 import co.cootep.motorfilas.repository.FilaRedisRepository;
@@ -45,6 +46,10 @@ public class FilaService {
 
     public Optional<SiguienteResponse> siguiente(String filaId, int k) {
         return repositorio.siguiente(filaId, k, propiedades.ttlFilaSegundos());
+    }
+
+    public PaginaFilaResponse listar(String filaId, int k, int pagina, int tamano) {
+        return repositorio.listar(filaId, k, pagina, tamano);
     }
 
     public Optional<PosicionResponse> posicion(String filaId, String turnoId, int k) {

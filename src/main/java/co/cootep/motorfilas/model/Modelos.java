@@ -37,6 +37,10 @@ public final class Modelos {
     public record EstadoFilaResponse(long preferenciales, long generales, long rachaPreferencial) {
     }
 
+    public record PaginaFilaResponse(
+            List<SiguienteResponse> elementos, long total, int pagina, int tamano, long totalPaginas) {
+    }
+
     public record CierreRequest(@NotEmpty List<@NotNull UUID> servicioIds) {
     }
 

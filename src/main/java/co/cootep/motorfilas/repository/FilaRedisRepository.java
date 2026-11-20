@@ -1,10 +1,12 @@
 package co.cootep.motorfilas.repository;
 
 import co.cootep.motorfilas.model.Modelos.Instantanea;
+import co.cootep.motorfilas.model.Modelos.PaginaFilaResponse;
 import co.cootep.motorfilas.model.Modelos.SiguienteResponse;
 import co.cootep.motorfilas.model.Modelos.TipoAtencion;
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -25,6 +27,7 @@ public class FilaRedisRepository {
     private static final ZoneId ZONA_AGENCIAS = ZoneId.of("America/Bogota");
     private static final RedisScript<Long> ENCOLAR = script("encolar", Long.class);
     private static final RedisScript<List> SIGUIENTE = script("siguiente", List.class);
+    private static final RedisScript<List> LISTAR = script("listar", List.class);
     private static final RedisScript<List> POSICION = script("posicion", List.class);
     private static final RedisScript<Long> RETIRAR = script("retirar", Long.class);
     private static final RedisScript<List> VACIAR = script("vaciar", List.class);
@@ -51,8 +54,21 @@ public class FilaRedisRepository {
         if (r == null || r.size() < 3 || r.get(0) == null) {
             return Optional.empty();
         }
-        return Optional.of(new SiguienteResponse(
-                (String) r.get(0), (long) Double.parseDouble((String) r.get(1)), TipoAtencion.valueOf((String) r.get(2))));
+        return Optional.of(leerTurno(r, 0));
+    }
+
+    /** Consulta atómica, sin retirar turnos ni modificar la racha. */
+    public PaginaFilaResponse listar(String filaId, int k, int pagina, int tamano) {
+        long desplazamiento = (pagina - 1L) * tamano;
+        List<Object> resultado = Objects.requireNonNull(redis.execute(LISTAR,
+                List.of(clave(filaId, "pref"), clave(filaId, "gen"), clave(filaId, "racha")),
+                Integer.toString(k), Long.toString(desplazamiento), Integer.toString(tamano)));
+        long total = ((Number) resultado.get(0)).longValue();
+        List<SiguienteResponse> elementos = new ArrayList<>((resultado.size() - 1) / 3);
+        for (int i = 1; i < resultado.size(); i += 3) {
+            elementos.add(leerTurno(resultado, i));
+        }
+        return new PaginaFilaResponse(elementos, total, pagina, tamano, Math.ceilDiv(total, tamano));
     }
 
     public Optional<Instantanea> posicion(String filaId, String turnoId) {
@@ -87,6 +103,12 @@ public class FilaRedisRepository {
 
     private static String clave(String filaId, String sufijo) {
         return "fila:" + filaId + ":" + sufijo;
+    }
+
+    private static SiguienteResponse leerTurno(List<Object> resultado, int inicio) {
+        return new SiguienteResponse((String) resultado.get(inicio),
+                (long) Double.parseDouble((String) resultado.get(inicio + 1)),
+                TipoAtencion.valueOf((String) resultado.get(inicio + 2)));
     }
 
     private static <T> RedisScript<T> script(String nombre, Class<T> tipo) {
